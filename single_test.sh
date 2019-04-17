@@ -11,5 +11,5 @@ gcc -o build/single_copy_basic src/single_copy_basic.c;
 echo "SINGLE TEST AIO"
 rm fs/two_aio.txt;
 rm build/single_copy_aio;
-gcc -o build/single_copy_aio src/single_copy_aio.c;
+gcc -o build/single_copy_aio src/single_copy_aio.c -laio;
 ./build/single_copy_aio fs/one.txt fs/two_aio.txt;
