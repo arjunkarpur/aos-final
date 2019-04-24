@@ -56,13 +56,14 @@ def experiment_main(test_case):
     our_times = []
     for _ in range(N_EXPERIMENTS):
         # Cp commands for both
-        base_bin = "cp" #TODO: use the same version of coreutils...build the baseline ourselves
-        ours_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31", "src", "cp"))
+        base_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
+        ours_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-ours", "src", "cp"))
         cp_args = "-r %s %s" % (src_dir, dest_dir)
         base_cmd = "%s %s" % (base_bin, cp_args)
         our_cmd = "%s %s" % (ours_bin, cp_args)
 
         # Run cp commands
+        #TODO: is there a caching issue here? why does 2nd take less time?
         t_base = time_command(base_cmd)
         shutil.rmtree(dest_dir)
         t_ours = time_command(our_cmd)
