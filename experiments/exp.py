@@ -51,6 +51,7 @@ def experiment_main(test_case):
     test_case.gen_func(src_dir)
 
     # Run tests for base cp -r
+    #TODO: baseline should be the same version of coreutils, but without any modifications. fix this
     log_print("\tRunning test for baseline cp -r")
     base_times = []
     for _ in range(N_EXPERIMENTS):
