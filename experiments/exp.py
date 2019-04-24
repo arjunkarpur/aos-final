@@ -61,6 +61,8 @@ def experiment_main(test_case):
             log_print("\t      %i - %f" % (_+1, t))
     log_print("\t    Avg - %f" % (sum(base_times)/float(N_EXPERIMENTS)))
 
+    # TODO: do we need to interleave tests? To account for differences in server state between the two sets of experiments
+
     # Run tests for our cp -r
     our_times = []
     log_print("\tRunning tests for our cp -r")
@@ -70,7 +72,7 @@ def experiment_main(test_case):
         shutil.rmtree(dest_dir)
         if VERBOSE:
             log_print("\t      %i - %f" % (_, t))
-    log_print("\t    Avg - %f" % sum(our_times)/float(N_EXPERIMENTS))
+    log_print("\t    Avg - %f" % (sum(our_times)/float(N_EXPERIMENTS)))
 
     # Clean up generated directory tree
     log_print("\tCleaning up")
