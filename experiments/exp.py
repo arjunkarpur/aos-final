@@ -53,36 +53,36 @@ def experiment_main(test_case):
 
     log_print("\tRunning %i experiments..." % N_EXPERIMENTS)
     base_times = []
-    our_times = []
+    ours_times = []
     for _ in range(N_EXPERIMENTS):
         # Cp commands for both
         base_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
         ours_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-ours", "src", "cp"))
         cp_args = "-r %s %s" % (src_dir, dest_dir)
         base_cmd = "%s %s" % (base_bin, cp_args)
-        our_cmd = "%s %s" % (ours_bin, cp_args)
+        ours_cmd = "%s %s" % (ours_bin, cp_args)
 
         # Run cp commands
         #TODO: is there a caching issue here? why does 2nd take less time?
         t_base = time_command(base_cmd)
         shutil.rmtree(dest_dir)
-        t_ours = time_command(our_cmd)
+        t_ours = time_command(ours_cmd)
         shutil.rmtree(dest_dir)
 
         # Record results
         base_times.append(t_base)
-        our_times.append(t_ours)
+        ours_times.append(t_ours)
         if VERBOSE:
             log_print("\t    Baseline %i/%i - %f" % (_+1, N_EXPERIMENTS, t_base))
             log_print("\t        Ours %i/%i - %f" % (_+1, N_EXPERIMENTS, t_ours))
     log_print("\t    Baseline Avg - %f" % (sum(base_times)/float(N_EXPERIMENTS)))
-    log_print("\t        Ours Avg - %f" % (sum(our_times)/float(N_EXPERIMENTS)))
+    log_print("\t        Ours Avg - %f" % (sum(ours_times)/float(N_EXPERIMENTS)))
 
     # Clean up generated directory tree
     log_print("\tCleaning up")
     if CLEAN_SRC:
         shutil.rmtree(src_dir)
-    return { "case_id": test_case.case_id, "base": base_times, "ours": our_times }
+    return { "case_id": test_case.case_id, "base": base_times, "ours": ours_times }
 
 def log_results(results):
     if not os.path.isdir(LOG_DIR):
