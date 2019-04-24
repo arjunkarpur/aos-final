@@ -4,7 +4,7 @@ import shutil
 import datetime
 from collections import namedtuple
 
-from test_case_gen import get_gen_func
+from test_case_gen import get_gen_funcs
 
 # Globals
 RUN_NAME = "test1"
@@ -28,10 +28,11 @@ def log_print(s):
 def create_test_cases():
     # Populate with test case objects
     test_cases = []
-    for i in range(1, 2):
+    gen_funcs = get_gen_funcs()
+    for i in range(1, len(gen_funcs)+1):
         if i in EXP_SKIP_LIST:
             continue
-        test_cases.append(TestCase(i, get_gen_func(i)))
+        test_cases.append(TestCase(i, gen_funcs[i]))
     return test_cases
 
 def time_command(cmd):
@@ -50,11 +51,12 @@ def experiment_main(test_case):
     os.makedirs(src_dir)
     test_case.gen_func(src_dir)
 
+    log_print("\tRunning %i experiments..." % N_EXPERIMENTS)
     base_times = []
     our_times = []
     for _ in range(N_EXPERIMENTS):
         # Cp commands for both
-        base_bin = "cp"
+        base_bin = "cp" #TODO: use the same version of coreutils...build the baseline ourselves
         ours_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31", "src", "cp"))
         cp_args = "-r %s %s" % (src_dir, dest_dir)
         base_cmd = "%s %s" % (base_bin, cp_args)
