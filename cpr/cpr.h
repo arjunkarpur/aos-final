@@ -16,8 +16,6 @@ static bool copy_dir(char const *src_name, char const *dst_name, head_t *head);
 static bool copy_reg(char const *src_name, char const *dst_name);
 static int aio_copy_p(char const *src_name, char const *dst_name);
 
-static int init_aio();
 static int wait_for_children();
-static int close_aio();
 
 #endif
