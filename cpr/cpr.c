@@ -11,14 +11,53 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/wait.h>
 
 static bool copy_internal(char const *src_name, char const *dst_name);
 static bool copy_dir(char const *src_name, char const *dst_name);
 static bool copy_reg(char const *src_name, char const *dst_name);
 static int aio_copy_p(char const *src_name, char const *dst_name);
 
+int init_aio();
+int wait_for_children();
+int close_aio();
+io_context_t aio_context;
+int MAX_EVENTS = 100;
+
+
 int main(int argc, char **argv) {
+  init_aio();
   copy_internal("poop", "poop");
+  wait_for_children();
+  close_aio();
+}
+
+int init_aio() {
+  // Create io_context
+  io_context_t aio_context = 0;
+  if (io_setup(MAX_EVENTS, &aio_context))
+  {
+    perror("Failed to create aio context...");
+    return -1;
+  }
+  return 0;
+}
+
+int close_aio() {
+  // Destroy io_context
+  if (io_destroy(aio_context) != 0)
+  {
+    perror("Failed to destroy aio_context");
+    return -1;
+  }
+  return 0;
+}
+
+int wait_for_children() {
+  pid_t wpid;
+  int status = 0;
+  while ((wpid = wait(&status)) > 0);
+  return 0;
 }
 
 bool copy_internal(char const *src_name, char const *dst_name) {
@@ -65,14 +104,6 @@ bool copy_reg(char const *src_name, char const *dst_name) {
 
 int aio_copy_p(char const *src_name, char const *dst_name) {
   // Perform copy of single file using AIO
-
-  // Create io_context
-  io_context_t aio_context = 0;
-  if (io_setup(100, &aio_context))
-  {
-    perror("Failed to create aio context...");
-    return -1;
-  }
 
   // Get src file size and create buffer
   int src_fd = open(src_name, O_DIRECT, "rb");
@@ -137,11 +168,6 @@ int aio_copy_p(char const *src_name, char const *dst_name) {
   if (write_events[0].res < 0)
   {
     perror("Failed to write dest file...");
-    return -1;
-  }
-  if (io_destroy(aio_context) != 0)
-  {
-    perror("Failed to destroy aio_context");
     return -1;
   }
   return 0;
