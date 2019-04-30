@@ -9,22 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <sys/mman.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
-static bool copy_internal(char const *src_name, char const *dst_name);
-static bool copy_dir(char const *src_name, char const *dst_name);
-static bool copy_reg(char const *src_name, char const *dst_name);
-static int aio_copy_p(char const *src_name, char const *dst_name);
+#include "cpr.h"
 
-int init_aio();
-int wait_for_children();
-int close_aio();
-io_context_t aio_context;
-int MAX_EVENTS = 100;
+static io_context_t aio_context;
+static int MAX_EVENTS = 100;
 
 int main(int argc, char **argv) {
   // Parse command line args
@@ -39,7 +33,7 @@ int main(int argc, char **argv) {
   }
 
   // Run copy routine on each file
-  if (copy_internal(argv[1], argv[2]) != 0) {
+  if (copy_internal(argv[1], argv[2])) {
     perror("copy failed");
     return -1;
   }
@@ -82,29 +76,51 @@ int wait_for_children() {
 }
 
 bool copy_internal(char const *src_name, char const *dst_name) {
-  struct stat src_sb;
+  head_t head;
+  TAILQ_INIT(&head);
 
-  if (stat(src_name, &src_sb) == -1) {
-    perror("stat failed");
-    return 1;
-  }
+  node_t *node = malloc(sizeof(node_t));
+  node->src_name = malloc(strlen(src_name));
+  node->dst_name = malloc(strlen(dst_name));
+  strcpy(node->src_name, src_name);
+  strcpy(node->dst_name, dst_name);
+  TAILQ_INSERT_TAIL(&head, node, nodes);
 
-  if (S_ISDIR(src_sb.st_mode)) {
-    printf("mkdir %s\n", dst_name);
-    /* if (mkdir(dst_name, S_IRUSR | S_IWUSR) != 0) { */
-    /*   perror("mkdir failed"); */
-    /*   return 1; */
-    /* } */
+  while (!TAILQ_EMPTY(&head)) {
+    node_t *curr = TAILQ_FIRST(&head);
+    struct stat src_sb;
 
-    return copy_dir(src_name, dst_name);
-  } else if (S_ISREG(src_sb.st_mode)) {
-    return copy_reg(src_name, dst_name);
+    if (stat(curr->src_name, &src_sb) == -1) {
+      perror("stat failed");
+      return 1;
+    }
+
+    if (S_ISDIR(src_sb.st_mode)) {
+      printf("mkdir %s\n", curr->dst_name);
+      if (mkdir(curr->dst_name, S_IRUSR | S_IWUSR) != 0) {
+        perror("mkdir failed");
+        return 1;
+      }
+
+      if (copy_dir(curr->src_name, curr->dst_name, &head)) {
+        return 1;
+      }
+    } else if (S_ISREG(src_sb.st_mode)) {
+      if (copy_reg(curr->src_name, curr->dst_name)) {
+        return 1;
+      }
+    }
+
+    free(curr->src_name);
+    free(curr->dst_name);
+    free(curr);
+    TAILQ_REMOVE(&head, curr, nodes);
   }
 
   return 0;
 }
 
-bool copy_dir(char const *src_name_in, char const *dst_name_in) {
+bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
   DIR *dir;
   if ((dir = opendir(src_name_in)) != NULL) {
     struct dirent *ent;
@@ -113,18 +129,16 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in) {
         continue;
       }
       if (ent->d_type == DT_DIR || ent->d_type == DT_REG) {
-        char *src_name = malloc(strlen(src_name_in) + strlen(ent->d_name) + 1);
-        char *dst_name = malloc(strlen(dst_name_in) + strlen(ent->d_name) + 1);
-        strcpy(src_name, src_name_in);
-        strcat(src_name, "/");
-        strcat(src_name, ent->d_name);
-        strcpy(dst_name, dst_name_in);
-        strcat(dst_name, "/");
-        strcat(dst_name, ent->d_name);
-        int ret = copy_internal(src_name, dst_name);
-        free(src_name);
-        free(dst_name);
-        return ret;
+        node_t *node = malloc(sizeof(node_t));
+        node->src_name = malloc(strlen(src_name_in) + strlen(ent->d_name) + 1);
+        node->dst_name = malloc(strlen(dst_name_in) + strlen(ent->d_name) + 1);
+        strcpy(node->src_name, src_name_in);
+        strcat(node->src_name, "/");
+        strcat(node->src_name, ent->d_name);
+        strcpy(node->dst_name, dst_name_in);
+        strcat(node->dst_name, "/");
+        strcat(node->dst_name, ent->d_name);
+        TAILQ_INSERT_TAIL(head, node, nodes);
       }
     }
     closedir(dir);
