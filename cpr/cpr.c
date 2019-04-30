@@ -1,14 +1,16 @@
 #define _GNU_SOURCE
 
 #include <assert.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <libaio.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <sys/stat.h>
 #include <stdlib.h>
-#include <libaio.h>
-#include <sys/types.h>
+#include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
@@ -24,12 +26,25 @@ int close_aio();
 io_context_t aio_context;
 int MAX_EVENTS = 100;
 
-
 int main(int argc, char **argv) {
-  init_aio();
-  copy_internal("poop", "poop");
-  wait_for_children();
-  close_aio();
+  // Init the aiocontext
+  if (init_aio() != 0) {
+    return -1;
+  }
+
+  // Run copy routine on each file
+  if (copy_internal(argv[1], "poop") != 0) {
+    perror("copy failed");
+    return -1;
+  }
+
+  // Wait for copies to finish and close
+  if (wait_for_children() != 0) {
+      return -1;
+  }
+  if (close_aio() != 0) {
+      return -1;
+  }
 }
 
 int init_aio() {
@@ -62,19 +77,18 @@ int wait_for_children() {
 
 bool copy_internal(char const *src_name, char const *dst_name) {
   struct stat src_sb;
-  struct stat dst_sb;
 
-  if ((stat(src_name, &src_sb) == -1) || (stat(dst_name, &dst_sb) == -1)){
+  if (stat(src_name, &src_sb) == -1) {
     perror("stat failed");
-    return 0;
+    return 1;
   }
 
   if (S_ISDIR(src_sb.st_mode)) {
-    assert(!S_ISDIR(dst_sb.st_mode));
-
-    if (mkdir(dst_name, S_IRUSR | S_IWUSR) != 0) {
-      perror("mkdir failed");
-    }
+    printf("mkdir %s\n", dst_name);
+    /* if (mkdir(dst_name, S_IRUSR | S_IWUSR) != 0) { */
+    /*   perror("mkdir failed"); */
+    /*   return 1; */
+    /* } */
 
     return copy_dir(src_name, dst_name);
   } else if (S_ISREG(src_sb.st_mode)) {
@@ -85,7 +99,32 @@ bool copy_internal(char const *src_name, char const *dst_name) {
 }
 
 bool copy_dir(char const *src_name_in, char const *dst_name_in) {
-  // TODO(Paul)
+  DIR *dir;
+  if ((dir = opendir(src_name_in)) != NULL) {
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != NULL) {
+      if (strcmp(".", ent->d_name) == 0 || strcmp("..", ent->d_name) == 0) {
+        continue;
+      }
+      if (ent->d_type == DT_DIR || ent->d_type == DT_REG) {
+        char *src_name = malloc(strlen(src_name_in) + strlen(ent->d_name) + 1);
+        char *dst_name = malloc(strlen(dst_name_in) + strlen(ent->d_name) + 1);
+        strcpy(src_name, src_name_in);
+        strcat(src_name, "/");
+        strcat(src_name, ent->d_name);
+        strcpy(dst_name, dst_name_in);
+        strcat(dst_name, "/");
+        strcat(dst_name, ent->d_name);
+        return copy_internal(src_name, dst_name);
+        free(src_name);
+        free(dst_name);
+      }
+    }
+    closedir(dir);
+  } else {
+    perror("opendir failed");
+    return 1;
+  }
   return 0;
 }
 
