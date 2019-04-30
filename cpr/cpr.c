@@ -67,7 +67,7 @@ bool copy_internal(char const *src_name, char const *dst_name) {
 
     if (S_ISDIR(src_sb.st_mode)) {
       printf("mkdir %s\n", curr->dst_name);
-      if (mkdir(dst_name, 0777)) {
+      if (mkdir(curr->dst_name, 0777)) {
         perror("mkdir failed");
         return 1;
       }
