@@ -27,13 +27,19 @@ io_context_t aio_context;
 int MAX_EVENTS = 100;
 
 int main(int argc, char **argv) {
+  // Parse command line args
+  if (argc != 3) {
+      printf("Usage: ./cpr SRC_FP DEST_FP\n");
+      return -1;
+  }
+
   // Init the aiocontext
   if (init_aio() != 0) {
     return -1;
   }
 
   // Run copy routine on each file
-  if (copy_internal(argv[1], "poop") != 0) {
+  if (copy_internal(argv[1], argv[2]) != 0) {
     perror("copy failed");
     return -1;
   }
