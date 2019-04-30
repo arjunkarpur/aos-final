@@ -89,9 +89,10 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in) {
         strcpy(dst_name, dst_name_in);
         strcat(dst_name, "/");
         strcat(dst_name, ent->d_name);
-        return copy_internal(src_name, dst_name);
+        int ret = copy_internal(src_name, dst_name);
         free(src_name);
         free(dst_name);
+        return ret;
       }
     }
     closedir(dir);
