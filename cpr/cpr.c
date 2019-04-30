@@ -20,9 +20,9 @@ static bool copy_dir(char const *src_name, char const *dst_name);
 static bool copy_reg(char const *src_name, char const *dst_name);
 static int aio_copy_p(char const *src_name, char const *dst_name);
 
-int init_aio();
-int wait_for_children();
-int close_aio();
+static int init_aio();
+static int wait_for_children();
+static int close_aio();
 io_context_t aio_context;
 int MAX_EVENTS = 100;
 
@@ -55,7 +55,6 @@ int main(int argc, char **argv) {
 
 int init_aio() {
   // Create io_context
-  io_context_t aio_context = 0;
   if (io_setup(MAX_EVENTS, &aio_context))
   {
     perror("Failed to create aio context...");
