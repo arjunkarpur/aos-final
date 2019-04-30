@@ -18,7 +18,7 @@
 static bool copy_internal(char const *src_name, char const *dst_name);
 static bool copy_dir(char const *src_name, char const *dst_name);
 static bool copy_reg(char const *src_name, char const *dst_name);
-static int aio_copy_p(int const src_fd, char const *dst_name);
+static int aio_copy_p(char const *src_name, char const *dst_name);
 
 static int wait_for_children();
 int MAX_EVENTS = 100;
@@ -58,11 +58,10 @@ bool copy_internal(char const *src_name, char const *dst_name) {
   }
 
   if (S_ISDIR(src_sb.st_mode)) {
-    printf("mkdir %s\n", dst_name);
-    /* if (mkdir(dst_name, S_IRUSR | S_IWUSR) != 0) { */
-    /*   perror("mkdir failed"); */
-    /*   return 1; */
-    /* } */
+    if (mkdir(dst_name, 0777) != 0) {
+      perror("mkdir failed");
+      return 1;
+    }
 
     return copy_dir(src_name, dst_name);
   } else if (S_ISREG(src_sb.st_mode)) {
@@ -105,14 +104,10 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in) {
 
 bool copy_reg(char const *src_name, char const *dst_name) {
   // Create new thread and have it execute aio_copy_p
-  printf("copy %s to %s\n", src_name, dst_name);
-
-  // Open src file
-  int src_fd = open(src_name, O_DIRECT, "rb");
 
   // Fork and copy
   if (fork() == 0) {
-    if (aio_copy_p(src_fd, dst_name) != 0) {
+    if (aio_copy_p(src_name, dst_name) != 0) {
         //TODO: handle child process failure
     }
     exit(0);
@@ -120,7 +115,7 @@ bool copy_reg(char const *src_name, char const *dst_name) {
   return 0;
 }
 
-int aio_copy_p(int const src_fd, char const *dst_name) {
+int aio_copy_p(char const *src_name, char const *dst_name) {
   // Perform copy of single file using AIO
 
   io_context_t aio_context = 0;
@@ -130,6 +125,7 @@ int aio_copy_p(int const src_fd, char const *dst_name) {
   }
 
   // Get src file size and create buffer
+  int src_fd = open(src_name, O_DIRECT, "rb");
   if (src_fd < 0) {
     perror("Failed to open src file...");
     return -1;
