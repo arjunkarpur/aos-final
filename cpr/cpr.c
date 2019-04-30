@@ -17,19 +17,13 @@
 
 #include "cpr.h"
 
-static io_context_t aio_context;
-static int MAX_EVENTS = 100;
+int MAX_EVENTS = 100;
 
 int main(int argc, char **argv) {
   // Parse command line args
   if (argc != 3) {
       printf("Usage: ./cpr SRC_FP DEST_FP\n");
       return -1;
-  }
-
-  // Init the aiocontext
-  if (init_aio() != 0) {
-    return -1;
   }
 
   // Run copy routine on each file
@@ -42,30 +36,6 @@ int main(int argc, char **argv) {
   if (wait_for_children() != 0) {
       return -1;
   }
-  if (close_aio() != 0) {
-      return -1;
-  }
-}
-
-int init_aio() {
-  // Create io_context
-  io_context_t aio_context = 0;
-  if (io_setup(MAX_EVENTS, &aio_context))
-  {
-    perror("Failed to create aio context...");
-    return -1;
-  }
-  return 0;
-}
-
-int close_aio() {
-  // Destroy io_context
-  if (io_destroy(aio_context) != 0)
-  {
-    perror("Failed to destroy aio_context");
-    return -1;
-  }
-  return 0;
 }
 
 int wait_for_children() {
@@ -97,7 +67,7 @@ bool copy_internal(char const *src_name, char const *dst_name) {
 
     if (S_ISDIR(src_sb.st_mode)) {
       printf("mkdir %s\n", curr->dst_name);
-      if (mkdir(curr->dst_name, S_IRUSR | S_IWUSR) != 0) {
+      if (mkdir(dst_name, 0777)) {
         perror("mkdir failed");
         return 1;
       }
@@ -151,10 +121,10 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
 
 bool copy_reg(char const *src_name, char const *dst_name) {
   // Create new thread and have it execute aio_copy_p
-  printf("copy %s to %s\n", src_name, dst_name);
+
+  // Fork and copy
   if (fork() == 0) {
-    int ret = aio_copy_p(src_name, dst_name);
-    if (ret != 0) {
+    if (aio_copy_p(src_name, dst_name) != 0) {
         //TODO: handle child process failure
     }
     exit(0);
@@ -165,23 +135,26 @@ bool copy_reg(char const *src_name, char const *dst_name) {
 int aio_copy_p(char const *src_name, char const *dst_name) {
   // Perform copy of single file using AIO
 
+  io_context_t aio_context = 0;
+  if (io_setup(MAX_EVENTS, &aio_context)) {
+    perror("Failed to create aio context...");
+    return -1;
+  }
+
   // Get src file size and create buffer
   int src_fd = open(src_name, O_DIRECT, "rb");
-  if (src_fd < 0)
-  {
+  if (src_fd < 0) {
     perror("Failed to open src file...");
     return -1;
   }
   struct stat f_stat;
-  if (fstat(src_fd, &f_stat) != 0)
-  {
+  if (fstat(src_fd, &f_stat) != 0) {
     perror("Failed to get src file size...");
     return -1;
   }
   int fsize = f_stat.st_size;
   char *buffer = mmap(NULL, fsize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  if (!buffer)
-  {
+  if (!buffer) {
     perror("Failed to mmap buffer...");
     return -1;
   }
@@ -190,8 +163,7 @@ int aio_copy_p(char const *src_name, char const *dst_name) {
   struct iocb read_req;
   struct iocb *read_iocbs = &read_req;
   io_prep_pread(&read_req, src_fd, buffer, fsize, 0);
-  if (io_submit(aio_context, 1, &read_iocbs) != 1)
-  {
+  if (io_submit(aio_context, 1, &read_iocbs) != 1) {
     perror("Failed to submit src file read request...");
     return -1;
   }
@@ -199,8 +171,7 @@ int aio_copy_p(char const *src_name, char const *dst_name) {
   // Spin until read completes
   struct io_event read_events[1];
   while (io_getevents(aio_context, 0, 1, &read_events[0], NULL) == 0) {} //spin
-  if (read_events[0].res < 0)
-  {
+  if (read_events[0].res < 0) {
     perror("Failed to read src file...");
     return -1;
   }
@@ -208,16 +179,14 @@ int aio_copy_p(char const *src_name, char const *dst_name) {
 
   // Submit write request to dest file
   int dest_fd = open(dst_name, O_RDWR | O_CREAT | O_DIRECT, 0666);
-  if (dest_fd < 0)
-  {
+  if (dest_fd < 0) {
     perror("Failed to open dest file...");
     return -1;
   }
   struct iocb write_req;
   struct iocb *write_iocbs = &write_req;
   io_prep_pwrite(&write_req, dest_fd, buffer, fsize, 0);
-  if (io_submit(aio_context, 1, &write_iocbs) != 1)
-  {
+  if (io_submit(aio_context, 1, &write_iocbs) != 1) {
     perror("Failed to submit dest file write request...");
     return -1;
   }
@@ -225,9 +194,14 @@ int aio_copy_p(char const *src_name, char const *dst_name) {
   // Spin until write completes, then clean up
   struct io_event write_events[1];
   while (io_getevents(aio_context, 0, 1, &write_events[0], NULL) == 0) {} //spin
-  if (write_events[0].res < 0)
-  {
+  if (write_events[0].res < 0) {
     perror("Failed to write dest file...");
+    return -1;
+  }
+
+  // Destroy io_context
+  if (io_destroy(aio_context) != 0) {
+    perror("Failed to destroy aio_context");
     return -1;
   }
   return 0;

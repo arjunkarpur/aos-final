@@ -57,9 +57,9 @@ def experiment_main(test_case):
     for _ in range(N_EXPERIMENTS):
         # Cp commands for both
         base_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
-        ours_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-ours", "src", "cp"))
-        cp_args = "-r %s %s" % (src_dir, dest_dir)
-        base_cmd = "%s %s" % (base_bin, cp_args)
+        ours_bin = os.path.join(os.path.join(PROJ_DIR, "cpr", "./cpr"))
+        cp_args = "%s %s" % (src_dir, dest_dir)
+        base_cmd = "%s -r %s" % (base_bin, cp_args)
         ours_cmd = "%s %s" % (ours_bin, cp_args)
 
         # Run cp commands
@@ -97,6 +97,12 @@ def log_results(results):
 # Main
 
 def main():
+
+    # Clear fs/ directory
+    if (os.path.isdir(FS_DIR)):
+        shutil.rmtree(FS_DIR)
+    os.makedirs(FS_DIR)
+
     # Create all test cases
     test_cases = create_test_cases();
     log_print("%i Test Cases" % len(test_cases))
