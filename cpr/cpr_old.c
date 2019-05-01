@@ -15,9 +15,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "cpr.h"
+#include "cpr_old.h"
 
-int MAX_EVENTS = 100;
+int MAX_EVENTS = 2;
 
 int main(int argc, char **argv) {
   // Parse command line args
