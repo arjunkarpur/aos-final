@@ -13,6 +13,7 @@ def get_gen_funcs():
         1: _tc_one_,
         2: _tc_two_,
         3: _tc_three_,
+        4: _tc_three_,
     }
     return gen_funcs
 
@@ -36,3 +37,8 @@ def _tc_three_(root_dir):
     # 10 large files in root dir
     for _ in range(10):
         create_rand_file(os.path.join(root_dir, "%i.txt" % _), 25*_MB_)
+
+def _tc_four_(root_dir):
+    # 500 small files in root dir
+    for _ in range(500):
+        create_rand_file(os.path.join(root_dir, "%i.txt" % _), 10*_KB_)
