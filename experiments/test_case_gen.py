@@ -13,7 +13,7 @@ def get_gen_funcs():
         1: _tc_one_,
         2: _tc_two_,
         3: _tc_three_,
-        4: _tc_three_,
+        4: _tc_four_,
     }
     return gen_funcs
 
