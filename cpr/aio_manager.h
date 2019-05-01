@@ -17,10 +17,11 @@ typedef struct copy_request_t {
   char *src_name;
   char *dst_name;
   int src_fd;
-  int fsize;
   int dst_fd;
+  int fsize;
   char *buffer;
   struct copy_request_t *next;
+  int state; //0-pre, 1-read, 2-write
 } copy_request_t;
 
 typedef struct aio_manager_t {
@@ -31,9 +32,7 @@ typedef struct aio_manager_t {
 
   // Linked lists to manage I/O
   copy_request_t *read_head;
-  copy_request_t *read_inflight_head;
   copy_request_t *write_head;
-  copy_request_t *write_inflight_head;
 
   // Counters
   int request_count;

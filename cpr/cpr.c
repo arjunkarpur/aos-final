@@ -138,10 +138,11 @@ bool copy_reg(char const *src_name, char const *dst_name) {
   copy_request->dst_name = malloc(strlen(dst_name));
   strcpy(copy_request->src_name, src_name);
   strcpy(copy_request->dst_name, dst_name);
-  copy_request->fsize = 0;
   copy_request->src_fd = -1;
   copy_request->dst_fd = -1;
+  copy_request->fsize = 0;
   copy_request->buffer = NULL;
+  copy_request->state = 0;
   copy_request->next = NULL;
   if (add_copy_req(&aio_manager, copy_request)) {
       perror("Failed to add copy request to aio_manager");

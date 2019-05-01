@@ -8,9 +8,7 @@ int init_aio_manager(aio_manager_t *aio_manager, int max_events, int read_batch_
     return -1;
   }
   aio_manager->read_head = NULL;
-  aio_manager->read_inflight_head = NULL;
   aio_manager->write_head = NULL;
-  aio_manager->write_inflight_head = NULL;
   aio_manager->request_count = 0;
   aio_manager->read_len = 0;
   aio_manager->write_len = 0;
@@ -40,11 +38,32 @@ void *aio_loop(void *vargp) {
     pthread_mutex_lock(&aio_manager->flush_mutex);
 
     // Check for any results and handle
-    //TODO
-    // - make sure you close fd as necessary
-    // - update counters
-    // - free unnecessary copy_requests
-    //   - free src_name and dst_name within those
+    struct io_event events[10];
+    int num_ret = io_getevents(aio_manager->aio_context, 0, 10, (struct io_event *)&events, NULL);
+    for (int i = 0; i < num_ret; i++) {
+        struct io_event *curr_event = &events[i];
+        copy_request_t *copy_req = (struct copy_request_t *)curr_event->data;
+        if (curr_event->res != copy_req->fsize) {
+          //TODO: handle failed read/write
+          printf("READ/WRITE FAILED\n");
+        }
+
+        if (copy_req->state == 1) {
+          // Handle the finished read
+          close(copy_req->src_fd);
+          copy_req->next = aio_manager->write_head;
+          aio_manager->write_head = copy_req;
+          aio_manager->write_len += 1;
+        } else if (copy_req->state == 2) {
+          // Handle the finished write
+          close(copy_req->dst_fd);
+          aio_manager->finished_count += 1;
+          free(copy_req->src_name);
+          free(copy_req->dst_name);
+          free(copy_req);
+        }
+        free(curr_event->obj);
+    }
 
     // Determine if finished
     //   No need to get request lock. If flush is true, then
@@ -93,8 +112,8 @@ void *aio_loop(void *vargp) {
         // LL updates
         aio_manager->read_head = aio_manager->read_head->next;
         aio_manager->read_len -= 1;
-        curr->next = aio_manager->read_inflight_head;
-        aio_manager->read_inflight_head = curr;
+        curr->next = NULL;
+        curr->state = 1;
       }
       // Submit read requests
       if (io_submit(aio_manager->aio_context, read_size, (struct iocb **)&read_iocbs) != read_size) {
@@ -131,8 +150,8 @@ void *aio_loop(void *vargp) {
         // LL updates
         aio_manager->write_head = aio_manager->write_head->next;
         aio_manager->write_len -= 1;
-        curr->next = aio_manager->write_inflight_head;
-        aio_manager->write_inflight_head = curr;
+        curr->next = NULL;
+        curr->state = 2;
       }
       // Submit write requests
       if (io_submit(aio_manager->aio_context, write_size, (struct iocb **) &write_iocbs) != write_size) {
