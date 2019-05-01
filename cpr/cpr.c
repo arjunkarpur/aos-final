@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <libaio.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,14 +15,26 @@
 #include <unistd.h>
 
 #include "cpr.h"
+#include "aio_manager.h"
 
 int MAX_EVENTS = 100;
+aio_manager_t aio_manager;
 
 int main(int argc, char **argv) {
   // Parse command line args
   if (argc != 3) {
-      printf("Usage: ./cpr SRC_FP DEST_FP\n");
-      return -1;
+    printf("Usage: ./cpr SRC_FP DEST_FP\n");
+    return -1;
+  }
+
+  // Init aio_manager thread
+  if (init_aio_manager(&aio_manager)) {
+    perror("Failed to init aio_manager");
+    return -1;
+  }
+  if (start_aio_thread(&aio_manager)) {
+    perror("Failed to start aio thread");
+    return -1;
   }
 
   // Run copy routine on each file
@@ -31,6 +42,13 @@ int main(int argc, char **argv) {
     perror("copy failed");
     return -1;
   }
+
+  // Wait for aio thread to finish all tasks
+  if (wait_for_aio_finish(&aio_manager)) {
+    perror("Failed to wait for aio to finish");
+    return -1;
+  }
+  return 0;
 }
 
 bool copy_internal(char const *src_name, char const *dst_name) {
@@ -107,6 +125,14 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
 }
 
 bool copy_reg(char const *src_name, char const *dst_name) {
-  //TODO: arjun
+  copy_request_t copy_request;
+  copy_request.src_name = src_name;
+  copy_request.dst_name = src_name;
+  copy_request.buffer = NULL;
+  copy_request.next = NULL;
+  if (add_copy_req(&aio_manager, &copy_request)) {
+      perror("Failed to add copy request to aio_manager");
+      return 1;
+  }
   return 0;
 }
