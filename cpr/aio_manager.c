@@ -114,16 +114,25 @@ void *aio_loop(void *vargp) {
     if (write_size > 0) {
       struct iocb *write_iocbs[write_size];
       for (int i = 0; i < write_size; i++) {
+        // Open dest file
         copy_request_t *curr = aio_manager->write_head;
         curr->dst_fd = open(curr->dst_name, O_RDWR | O_CREAT | O_DIRECT, 0666);
         if (curr->dst_fd < 0) {
           //TODO: handle failure to open file
           printf("WRITE - FAILED TO OPEN DST FILE\n");
         }
+
+        // Create iocb
         struct iocb *write_req = malloc(sizeof(struct iocb));
         io_prep_pwrite(write_req, curr->dst_fd, curr->buffer, curr->fsize, 0);
         write_req->data = (void *)curr;
         write_iocbs[i] = write_req;
+
+        // LL updates
+        aio_manager->write_head = aio_manager->write_head->next;
+        aio_manager->write_len -= 1;
+        curr->next = aio_manager->write_inflight_head;
+        aio_manager->write_inflight_head = curr;
       }
       // Submit write requests
       if (io_submit(aio_manager->aio_context, write_size, (struct iocb **) &write_iocbs) != write_size) {
