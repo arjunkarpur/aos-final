@@ -17,7 +17,11 @@
 #include "cpr.h"
 #include "aio_manager.h"
 
+// Params
 int MAX_EVENTS = 100;
+int READ_BATCH_SIZE = 8;
+int WRITE_BATCH_SIZE = 8;
+
 aio_manager_t aio_manager;
 
 int main(int argc, char **argv) {
@@ -28,7 +32,7 @@ int main(int argc, char **argv) {
   }
 
   // Init aio_manager thread
-  if (init_aio_manager(&aio_manager)) {
+  if (init_aio_manager(&aio_manager, MAX_EVENTS, READ_BATCH_SIZE, WRITE_BATCH_SIZE)) {
     perror("Failed to init aio_manager");
     return -1;
   }
@@ -47,6 +51,10 @@ int main(int argc, char **argv) {
   if (wait_for_aio_finish(&aio_manager)) {
     perror("Failed to wait for aio to finish");
     return -1;
+  }
+  if (destroy_aio_manager(&aio_manager)) {
+      perror("Failed to destroy aio_manager");
+      return -1;
   }
   return 0;
 }
@@ -125,12 +133,16 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
 }
 
 bool copy_reg(char const *src_name, char const *dst_name) {
-  copy_request_t copy_request;
-  copy_request.src_name = src_name;
-  copy_request.dst_name = src_name;
-  copy_request.buffer = NULL;
-  copy_request.next = NULL;
-  if (add_copy_req(&aio_manager, &copy_request)) {
+  copy_request_t *copy_request = malloc(sizeof *copy_request);
+  copy_request->src_name = malloc(strlen(src_name));
+  copy_request->dst_name = malloc(strlen(dst_name));
+  strcpy(copy_request->src_name, src_name);
+  strcpy(copy_request->dst_name, dst_name);
+  copy_request->src_fd = -1;
+  copy_request->dst_fd = -1;
+  copy_request->buffer = NULL;
+  copy_request->next = NULL;
+  if (add_copy_req(&aio_manager, copy_request)) {
       perror("Failed to add copy request to aio_manager");
       return 1;
   }
