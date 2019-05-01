@@ -11,11 +11,13 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <stdlib.h>
 
 typedef struct copy_request_t {
   char *src_name;
   char *dst_name;
   int src_fd;
+  int fsize;
   int dst_fd;
   char *buffer;
   struct copy_request_t *next;
