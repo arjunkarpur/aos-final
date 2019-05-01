@@ -1,6 +1,7 @@
 import os
 import time
 import shutil
+import filecmp
 import datetime
 from collections import namedtuple
 
@@ -17,7 +18,17 @@ PROJ_DIR = os.path.join("..")
 FS_DIR = os.path.join(PROJ_DIR, "experiments", "fs")
 LOG_DIR = os.path.join(PROJ_DIR, "experiments", "logs")
 
+##############################################
+# Custom objects
+
 TestCase = namedtuple("TestCase", "case_id gen_func")
+
+class dircmp(filecmp.dircmp):
+    # Reference: https://stackoverflow.com/questions/4187564/recursive-dircmp-compare-two-directories-to-ensure-they-have-the-same-files-and
+    def phase3(self):
+        fcomp = filecmp.cmpfiles(self.left, self.right, self.common_files, \
+            shallow=False)
+        self.same_files, self.diff_files, self.funny_files = fcomp
 
 ##############################################
 # Helpers
@@ -41,6 +52,16 @@ def time_command(cmd):
     end = time.time()
     return end-start
 
+def is_same(dir1, dir2):
+    # Note: See reference to source for code in dircmp class definition
+    compared = dircmp(dir1, dir2)
+    if (compared.left_only or compared.right_only or compared.diff_files or compared.funny_files):
+        return False
+    for subdir in compared.common_dirs:
+        if not is_same(os.path.join(dir1, subdir), os.path.join(dir2, subdir)):
+            return False
+    return True
+
 def experiment_main(test_case):
     log_print("[TEST CASE ID: %i]" % test_case.case_id)
 
@@ -56,17 +77,20 @@ def experiment_main(test_case):
     ours_times = []
     for _ in range(N_EXPERIMENTS):
         # Cp commands for both
-        base_bin = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
-        ours_bin = os.path.join(os.path.join(PROJ_DIR, "cpr", "./cpr"))
+        base_bin_fp = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
+        ours_bin_fp = os.path.join(os.path.join(PROJ_DIR, "cpr", "./cpr"))
         cp_args = "%s %s" % (src_dir, dest_dir)
-        base_cmd = "%s -r %s" % (base_bin, cp_args)
-        ours_cmd = "%s %s" % (ours_bin, cp_args)
+        base_cmd = "%s -r %s" % (base_bin_fp, cp_args)
+        ours_cmd = "%s %s" % (ours_bin_fp, cp_args)
 
-        # Run cp commands
-        #TODO: is there a caching issue here? why does 2nd take less time?
+        # Run cp commands, time, and validate
         t_base = time_command(base_cmd)
+        if not is_same(src_dir, dest_dir):
+            log_print("\t    Baseline Iter %i - COPY SANITY CHECK FAILED" % (_+1))
         shutil.rmtree(dest_dir)
         t_ours = time_command(ours_cmd)
+        if not is_same(src_dir, dest_dir):
+            log_print("\t        Ours Iter %i - COPY SANITY CHECK FAILED" % (_+1))
         shutil.rmtree(dest_dir)
 
         # Record results
