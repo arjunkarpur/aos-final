@@ -18,7 +18,7 @@
 #include "aio_manager.h"
 
 // Params
-int MAX_EVENTS = 100;
+int MAX_EVENTS = 2000;
 int READ_BATCH_SIZE = 8;
 int WRITE_BATCH_SIZE = 8;
 
