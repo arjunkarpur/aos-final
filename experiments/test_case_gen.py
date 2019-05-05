@@ -22,6 +22,16 @@ def create_rand_file(fp, size):
 def log_print(s):
     print("[%s]\t\t%s" % (datetime.datetime.now(), s))
 
+def create_mary_tree(root_dir, height, num_files, num_dirs, file_size=10*_KB_):
+    for i in range(num_files):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), file_size)
+    if height == 1:
+        return
+    for i in range(num_dirs):
+        fp = os.path.join(root_dir, "dir_{}".format(i))
+        os.mkdir(fp)
+        create_mary_tree(fp, height - 1, num_files, num_dirs, file_size)
+
 ####################################
 # Test Cases
 
@@ -51,3 +61,42 @@ def _tc_four_(root_dir):
     log_print("500 10KB files")
     for _ in range(500):
         create_rand_file(os.path.join(root_dir, "%i.txt" % _), 10*_KB_)
+
+@TestCase
+def short_balanced_tree(root_dir):
+    # Balanced tree of height 3
+    # Each non-leaf has 3 files and 1 dir
+    log_print("Balanced tree of height 3")
+    create_mary_tree(root_dir, 3, 3, 3)
+
+@TestCase
+def tall_balanced_tree(root_dir):
+    # Balanced tree of height 7
+    # Each non-leaf has 3 files and 2 dir
+    log_print("Balanced tree of height 7, 3 files")
+    create_mary_tree(root_dir, 7, 3, 2)
+
+@TestCase
+def tall_balanced_tree_more_files(root_dir):
+    # Balanced tree of height 7
+    # Each non-leaf has 10 files and 2 dir
+    log_print("Balanced tree of height 7, 10 files")
+    create_mary_tree(root_dir, 7, 10, 2)
+
+@TestCase
+def tall_balanced_tree_even_more_files(root_dir):
+    # Balanced tree of height 7
+    # Each non-leaf has 10 files and 2 dir
+    # Warning: this is a phat test case, will take a couple minutes to run
+    log_print("Balanced tree of height 7, 20 files")
+    create_mary_tree(root_dir, 7, 20, 2)
+
+@TestCase
+def tall_imbalanced_tree_more_files(root_dir):
+    # Balanced tree of height 7
+    # Each non-leaf has 10 files and 2 dir
+    log_print("Imbalanced tree of height 5 and 2, 10 files")
+    create_mary_tree(root_dir, 5, 10, 2)
+    fp = os.path.join(root_dir, "poop")
+    os.mkdir(fp)
+    create_mary_tree(fp, 2, 10, 2)
