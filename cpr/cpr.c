@@ -64,10 +64,8 @@ bool copy_internal(char const *src_name, char const *dst_name) {
   TAILQ_INIT(&head);
 
   node_t *node = malloc(sizeof(node_t));
-  node->src_name = malloc(strlen(src_name));
-  node->dst_name = malloc(strlen(dst_name));
-  strcpy(node->src_name, src_name);
-  strcpy(node->dst_name, dst_name);
+  node->src_name = strdup(src_name);
+  node->dst_name = strdup(dst_name);
   TAILQ_INSERT_TAIL(&head, node, nodes);
 
   while (!TAILQ_EMPTY(&head)) {
@@ -113,8 +111,8 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
       }
       if (ent->d_type == DT_DIR || ent->d_type == DT_REG) {
         node_t *node = malloc(sizeof(node_t));
-        node->src_name = malloc(strlen(src_name_in) + strlen(ent->d_name) + 1);
-        node->dst_name = malloc(strlen(dst_name_in) + strlen(ent->d_name) + 1);
+        node->src_name = malloc(strlen(src_name_in) + strlen(ent->d_name) + 2);
+        node->dst_name = malloc(strlen(dst_name_in) + strlen(ent->d_name) + 2);
         strcpy(node->src_name, src_name_in);
         strcat(node->src_name, "/");
         strcat(node->src_name, ent->d_name);
@@ -134,10 +132,8 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
 
 bool copy_reg(char const *src_name, char const *dst_name) {
   copy_request_t *copy_request = malloc(sizeof *copy_request);
-  copy_request->src_name = malloc(strlen(src_name));
-  copy_request->dst_name = malloc(strlen(dst_name));
-  strcpy(copy_request->src_name, src_name);
-  strcpy(copy_request->dst_name, dst_name);
+  copy_request->src_name = strdup(src_name);
+  copy_request->dst_name = strdup(dst_name);
   copy_request->src_fd = -1;
   copy_request->dst_fd = -1;
   copy_request->fsize = 0;
