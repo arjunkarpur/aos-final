@@ -18,7 +18,7 @@
 #include "aio_manager.h"
 
 // Params
-int MAX_EVENTS = 2000;
+int MAX_EVENTS = 65536;
 int READ_BATCH_SIZE = 8;
 int WRITE_BATCH_SIZE = 8;
 
@@ -26,9 +26,12 @@ aio_manager_t aio_manager;
 
 int main(int argc, char **argv) {
   // Parse command line args
-  if (argc != 3) {
-    printf("Usage: ./cpr SRC_FP DEST_FP\n");
+  if (argc != 3 && argc != 4) {
+    printf("Usage: ./cpr SRC_FP DEST_FP [BATCH_SIZE]\n");
     return -1;
+  } else if (argc == 4) {
+    READ_BATCH_SIZE = atoi(argv[3]);
+    WRITE_BATCH_SIZE = atoi(argv[3]);
   }
 
   // Init aio_manager thread

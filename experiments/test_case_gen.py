@@ -20,7 +20,7 @@ def create_rand_file(fp, size):
         f.write(os.urandom(size))
 
 def log_print(s):
-    print("[%s]\t\t%s" % (datetime.datetime.now(), s))
+    print("[%s]\t\t\t%s" % (datetime.datetime.now(), s))
 
 def create_mary_tree(root_dir, height, num_files, num_dirs, file_size=10*_KB_):
     for i in range(num_files):
@@ -36,31 +36,100 @@ def create_mary_tree(root_dir, height, num_files, num_dirs, file_size=10*_KB_):
 # Test Cases
 
 @TestCase
-def _tc_one_(root_dir):
-    # Single small file in root dir
-    log_print("Single 10KB file")
-    create_rand_file(os.path.join(root_dir, "one.txt"), 10*_KB_)
+def small_files_2p0(root_dir):
+    log_print("2^0 10KB file")
+    for i in range(int(2**0)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
 @TestCase
-def _tc_two_(root_dir):
-    # 10 small files in root dir
-    log_print("10 10KB files")
-    for _ in range(10):
-        create_rand_file(os.path.join(root_dir, "%i.txt" % _), 10*_KB_)
+def small_files_2p1(root_dir):
+    log_print("2^1 10KB file")
+    for i in range(int(2**1)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
 @TestCase
-def _tc_three_(root_dir):
-    # 10 large files in root dir
-    log_print("10 25MB files")
-    for _ in range(10):
-        create_rand_file(os.path.join(root_dir, "%i.txt" % _), 25*_MB_)
+def small_files_2p2(root_dir):
+    log_print("2^2 10KB file")
+    for i in range(int(2**2)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
 @TestCase
-def _tc_four_(root_dir):
-    # 500 small files in root dir
-    log_print("500 10KB files")
-    for _ in range(500):
-        create_rand_file(os.path.join(root_dir, "%i.txt" % _), 10*_KB_)
+def small_files_2p3(root_dir):
+    log_print("2^3 10KB file")
+    for i in range(int(2**3)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p4(root_dir):
+    log_print("2^4 10KB file")
+    for i in range(int(2**4)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p5(root_dir):
+    log_print("2^5 10KB file")
+    for i in range(int(2**5)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p6(root_dir):
+    log_print("2^6 10KB file")
+    for i in range(int(2**6)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p7(root_dir):
+    log_print("2^7 10KB file")
+    for i in range(int(2**7)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p8(root_dir):
+    log_print("2^8 10KB file")
+    for i in range(int(2**8)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p9(root_dir):
+    log_print("2^9 10KB file")
+    for i in range(int(2**9)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p10(root_dir):
+    log_print("2^10 10KB file")
+    for i in range(int(2**10)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p11(root_dir):
+    log_print("2^11 10KB file")
+    for i in range(int(2**11)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p12(root_dir):
+    log_print("2^12 10KB file")
+    for i in range(int(2**12)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p13(root_dir):
+    log_print("2^13 10KB file")
+    for i in range(int(2**13)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p14(root_dir):
+    log_print("2^14 10KB file")
+    for i in range(int(2**14)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+
+@TestCase
+def small_files_2p15(root_dir):
+    log_print("2^15 10KB file")
+    for i in range(int(2**15)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
 @TestCase
 def short_balanced_tree(root_dir):

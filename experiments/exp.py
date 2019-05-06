@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import shutil
 import filecmp
 import datetime
@@ -13,6 +14,7 @@ EXP_SKIP_LIST = []
 N_EXPERIMENTS = 5
 CLEAN_SRC = True
 VERBOSE = False
+BATCH_SIZES = [8]
 
 PROJ_DIR = os.path.join("..")
 FS_DIR = os.path.join(PROJ_DIR, "experiments", "fs")
@@ -72,9 +74,9 @@ def experiment_main(test_case):
     os.makedirs(src_dir)
     test_case.gen_func(src_dir)
 
-    log_print("\tRunning %i experiments..." % N_EXPERIMENTS)
+    log_print("\t\tRunning %i experiments..." % N_EXPERIMENTS)
     base_times = []
-    ours_times = []
+    ours_times = {batch_size:[] for batch_size in BATCH_SIZES}
     for _ in range(N_EXPERIMENTS):
         # Cp commands for both
         base_bin_fp = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
@@ -86,35 +88,38 @@ def experiment_main(test_case):
         # Run cp commands, time, and validate
         t_base = time_command(base_cmd)
         if not is_same(src_dir, dest_dir):
-            log_print("\t    Baseline Iter %i - COPY SANITY CHECK FAILED" % (_+1))
+            log_print("\t\tBaseline Iter %i\tCOPY SANITY CHECK FAILED" % (_+1))
         shutil.rmtree(dest_dir)
-        t_ours = time_command(ours_cmd)
-        if not is_same(src_dir, dest_dir):
-            log_print("\t        Ours Iter %i - COPY SANITY CHECK FAILED" % (_+1))
-        shutil.rmtree(dest_dir)
-
-        # Record results
         base_times.append(t_base)
-        ours_times.append(t_ours)
         if VERBOSE:
-            log_print("\t    Baseline %i/%i - %f" % (_+1, N_EXPERIMENTS, t_base))
-            log_print("\t        Ours %i/%i - %f" % (_+1, N_EXPERIMENTS, t_ours))
-    log_print("\t    Baseline Avg - %f" % (sum(base_times)/float(N_EXPERIMENTS)))
-    log_print("\t        Ours Avg - %f" % (sum(ours_times)/float(N_EXPERIMENTS)))
+            log_print("\t\tBaseline %i/%i\t%f" % (_+1, N_EXPERIMENTS, t_base))
+
+        for batch_size in BATCH_SIZES:
+            t_ours = time_command(ours_cmd + (" %i" % batch_size))
+            if not is_same(src_dir, dest_dir):
+                log_print("\t\tOurs [%i] Iter %i\tCOPY SANITY CHECK FAILED" % (batch_size, _+1))
+            shutil.rmtree(dest_dir)
+            ours_times[batch_size].append(t_ours)
+            if VERBOSE:
+                log_print("\t\tOurs [%i] %i/%i\t%f" % (batch_size, _+1, N_EXPERIMENTS, t_ours))
+
+    log_print("\t\tBaseline Avg\t%f" % (sum(base_times)/float(N_EXPERIMENTS)))
+    for batch_size in BATCH_SIZES:
+        log_print("\t\tOurs [%i] Avg\t%f" % (batch_size, sum(ours_times[batch_size])/float(N_EXPERIMENTS)))
 
     # Clean up generated directory tree
     log_print("\tCleaning up")
     if CLEAN_SRC:
         shutil.rmtree(src_dir)
     return { "case_id": test_case.case_id, "base": base_times, "ours": ours_times }
+    return {}
 
 def log_results(results):
     if not os.path.isdir(LOG_DIR):
         os.makedirs(LOG_DIR)
-    out_fp = os.path.join(LOG_DIR, "%s.txt" % RUN_NAME)
+    out_fp = os.path.join(LOG_DIR, "%s.json" % RUN_NAME)
     f = open(out_fp, 'w')
-    for res in results:
-        f.write("%s\n" % res)
+    json.dump(results, f)
     f.close()
 
 ##############################################
