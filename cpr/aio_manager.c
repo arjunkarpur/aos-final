@@ -1,4 +1,5 @@
 #include "aio_manager.h"
+#include <stdlib.h>
 
 int init_aio_manager(aio_manager_t *aio_manager, int max_events, int read_batch_size, int write_batch_size) {
 
@@ -44,8 +45,8 @@ void *aio_loop(void *vargp) {
         struct io_event *curr_event = &events[i];
         copy_request_t *copy_req = (struct copy_request_t *)curr_event->data;
         if (curr_event->res != copy_req->fsize) {
-          //TODO: handle failed read/write
-          printf("READ/WRITE FAILED\n");
+          perror("READ/WRITE FAILED\n");
+          exit(1);
         }
 
         if (copy_req->state == 1) {
@@ -88,19 +89,19 @@ void *aio_loop(void *vargp) {
         copy_request_t *curr = aio_manager->read_head;
         curr->src_fd = open(curr->src_name, O_DIRECT, "rb");
         if (curr->src_fd < 0) {
-          //TODO: handle failure to open file
-          printf("READ - FAILED TO OPEN SRC FILE\n");
+          perror("READ - FAILED TO OPEN SRC FILE\n");
+          exit(1);
         }
         struct stat f_stat;
         if (fstat(curr->src_fd, &f_stat)) {
-          //TODO: handle failure to fstat
-          printf("READ - FAILED TO FSTAT SRC FILE\n");
+          perror("READ - FAILED TO FSTAT SRC FILE\n");
+          exit(1);
         }
         curr->fsize = f_stat.st_size;
         curr->buffer = mmap(NULL, curr->fsize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (!curr->buffer) {
-          //TODO handle failure to allocate buffer
-          printf("READ - FAILED TO ALLOCATE BUFFER\n");
+          perror("READ - FAILED TO ALLOCATE BUFFER\n");
+          exit(1);
         }
 
         // Create iocb
@@ -117,12 +118,12 @@ void *aio_loop(void *vargp) {
       }
       // Submit read requests
       if (io_submit(aio_manager->aio_context, read_size, (struct iocb **)&read_iocbs) != read_size) {
-        //TODO: handle failure of submission
-        printf("READ - FAILED TO IO_SUBMIT ALL REQUESTS\n");
+        perror("READ - FAILED TO IO_SUBMIT ALL REQUESTS\n");
+        exit(1);
       }
     }
     pthread_mutex_unlock(&aio_manager->request_mutex);
-    
+
     // Submit aio write requests, if necessary
     int write_size = 0;
     if (aio_manager->flush) {
@@ -137,8 +138,8 @@ void *aio_loop(void *vargp) {
         copy_request_t *curr = aio_manager->write_head;
         curr->dst_fd = open(curr->dst_name, O_RDWR | O_CREAT | O_DIRECT, 0666);
         if (curr->dst_fd < 0) {
-          //TODO: handle failure to open file
-          printf("WRITE - FAILED TO OPEN DST FILE\n");
+          perror("WRITE - FAILED TO OPEN DST FILE\n");
+          exit(1);
         }
 
         // Create iocb
@@ -155,8 +156,8 @@ void *aio_loop(void *vargp) {
       }
       // Submit write requests
       if (io_submit(aio_manager->aio_context, write_size, (struct iocb **) &write_iocbs) != write_size) {
-        //TODO: handle failure of submission
-        printf("WRITE - FAILED TO IO_SUBMIT ALL REQUESTS\n");
+        perror("WRITE - FAILED TO IO_SUBMIT ALL REQUESTS\n");
+        exit(1);
       }
     }
 
