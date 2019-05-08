@@ -79,7 +79,8 @@ def experiment_main(test_case):
     ours_times = {batch_size:[] for batch_size in BATCH_SIZES}
     for _ in range(N_EXPERIMENTS):
         # Cp commands for both
-        base_bin_fp = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
+        # base_bin_fp = os.path.join(os.path.join(PROJ_DIR, "coreutils-8.31-baseline", "src", "cp"))
+        base_bin_fp = "cp"
         ours_bin_fp = os.path.join(os.path.join(PROJ_DIR, "cpr", "./cpr"))
         cp_args = "%s %s" % (src_dir, dest_dir)
         base_cmd = "%s -r %s" % (base_bin_fp, cp_args)
@@ -112,7 +113,6 @@ def experiment_main(test_case):
     if CLEAN_SRC:
         shutil.rmtree(src_dir)
     return { "case_id": test_case.case_id, "base": base_times, "ours": ours_times }
-    return {}
 
 def log_results(results):
     if not os.path.isdir(LOG_DIR):
