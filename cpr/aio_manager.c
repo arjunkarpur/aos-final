@@ -1,6 +1,8 @@
 #include "aio_manager.h"
 #include <stdlib.h>
 
+extern volatile int req_count;
+
 int init_aio_manager(aio_manager_t *aio_manager, int max_events, int read_batch_size, int write_batch_size) {
 
   // Initialize all fields of aio_manager
@@ -69,7 +71,10 @@ void *aio_loop(void *vargp) {
     // Determine if finished
     //   No need to get request lock. If flush is true, then
     //   other thread is finished submitting copy requests
-    if (aio_manager->flush && (aio_manager->request_count == aio_manager->finished_count)) {
+    if (aio_manager->flush && (req_count == aio_manager->finished_count)) {
+      /* printf("req_count = %d\n", req_count); */
+      /* printf("request_count = %d, finished_count = %d\n", */
+      /*     aio_manager->request_count, aio_manager->finished_count); */
       pthread_mutex_unlock(&aio_manager->flush_mutex);
       break;
     }

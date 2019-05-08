@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -21,6 +22,8 @@
 int MAX_EVENTS = 65536;
 int READ_BATCH_SIZE = 8;
 int WRITE_BATCH_SIZE = 8;
+
+volatile int req_count = 0;
 
 aio_manager_t aio_manager;
 
@@ -50,6 +53,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
+  /* printf("made %d requests\n", req_count); */
   // Wait for aio thread to finish all tasks
   if (wait_for_aio_finish(&aio_manager)) {
     perror("Failed to wait for aio to finish");
@@ -90,6 +94,7 @@ bool copy_internal(char const *src_name, char const *dst_name) {
         return 1;
       }
     } else if (S_ISREG(src_sb.st_mode)) {
+      req_count += 1;
       if (copy_reg(curr->src_name, curr->dst_name)) {
         return 1;
       }
@@ -108,11 +113,20 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
   DIR *dir;
   if ((dir = opendir(src_name_in)) != NULL) {
     struct dirent *ent;
-    while ((ent = readdir(dir)) != NULL) {
+    while (1) {
+      errno = 0;
+      ent = readdir(dir);
+      if (ent == NULL) {
+        if (errno) {
+          perror("readdir failed");
+          return 1;
+        }
+        break;
+      }
       if (strcmp(".", ent->d_name) == 0 || strcmp("..", ent->d_name) == 0) {
         continue;
       }
-      if (ent->d_type == DT_DIR || ent->d_type == DT_REG) {
+      if (ent->d_type == DT_DIR || ent->d_type == DT_REG || ent->d_type == DT_UNKNOWN) {
         node_t *node = malloc(sizeof(node_t));
         node->src_name = malloc(strlen(src_name_in) + strlen(ent->d_name) + 2);
         node->dst_name = malloc(strlen(dst_name_in) + strlen(ent->d_name) + 2);
@@ -123,9 +137,30 @@ bool copy_dir(char const *src_name_in, char const *dst_name_in, head_t *head) {
         strcat(node->dst_name, "/");
         strcat(node->dst_name, ent->d_name);
         TAILQ_INSERT_TAIL(head, node, nodes);
+      } else {
+        switch(ent->d_type) {
+          case DT_BLK:
+            printf("got DT_BLK\n"); exit(1);
+          case DT_CHR:
+            printf("DT_CHR\n"); exit(1);
+          case DT_FIFO:
+            printf("DT_FIFO\n"); exit(1);
+          case DT_LNK:
+            printf("DT_LNK\n"); exit(1);
+          case DT_SOCK:
+            printf("DT_SOCK\n"); exit(1);
+          case DT_UNKNOWN:
+            printf("DT_UNKNOWN\n"); exit(1);
+          default:
+            printf("what\n");
+            exit(1);
+        }
       }
     }
-    closedir(dir);
+    if (closedir(dir)) {
+      perror("closedir failed");
+      return 1;
+    }
   } else {
     perror("opendir failed");
     return 1;
