@@ -2,7 +2,7 @@ import os
 import json
 from statistics import mean
 
-FP = "logs/kwaugh1.json"
+FP = "logs/aida.json"
 VERBOSE = False
 
 ids = {
