@@ -42,9 +42,7 @@ def create_test_cases():
     # Populate with test case objects
     test_cases = []
     gen_funcs = get_gen_funcs()
-    for i in range(1, len(gen_funcs)+1):
-        if i in EXP_SKIP_LIST:
-            continue
+    for i in gen_funcs:
         test_cases.append(TestCase(i, gen_funcs[i]))
     return test_cases
 
