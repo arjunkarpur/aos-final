@@ -33,6 +33,7 @@ f = open(FP, 'r')
 data = json.load(f)
 f.close()
 
+batch_votes = {}
 for case in data:
     ours_data = case['ours']
     base_data = case['base']
@@ -65,3 +66,9 @@ for case in data:
     print("\tDiff: %f%%" % (difference*100))
     print("")
 
+    if best_batch not in batch_votes:
+        batch_votes[best_batch] = 0
+    batch_votes[best_batch] += 1
+
+print("Batch winners: (key=batch_size: value=count)")
+print batch_votes
