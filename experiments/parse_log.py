@@ -3,6 +3,7 @@ import json
 from statistics import mean
 
 FP = "logs/kwaugh1.json"
+VERBOSE = False
 
 ids = {
     1: "small_files_2p0",
@@ -39,16 +40,28 @@ for case in data:
     print("Test case: %s" % case_name)
 
     base_avg = mean(base_data)
-    print("\tBase Avg:\t %f" % base_avg)
+    print("\tBase Avg:\t %f s" % base_avg)
 
     keys = [int(k) for k in ours_data.keys()]
     keys = sorted(keys)
     keys_str = [str(k) for k in keys]
+    best_batch = -1
+    best_time = float('inf')
     for bsize_s in keys_str:
         bsize = int(bsize_s)
         b_avg = mean(ours_data[bsize_s])
         tack = " "
         if b_avg < base_avg:
             tack = ">"
-        print("\tOurs %i Avg:\t%s%f" % (bsize, tack, b_avg))
+        if VERBOSE:
+            print("\tOurs %i Avg:\t%s%f s" % (bsize, tack, b_avg))
+        if b_avg < best_time:
+            best_time = b_avg
+            best_batch = bsize
+    if not VERBOSE:
+        print("\tOurs %i Avg:\t%s%f s" % (best_batch, " ", best_time))
+
+    difference = (best_time - base_avg) / base_avg
+    print("\tDiff: %f%%" % (difference*100))
+    print("")
 
