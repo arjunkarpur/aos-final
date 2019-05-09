@@ -14,7 +14,7 @@ EXP_SKIP_LIST = []
 N_EXPERIMENTS = 5
 CLEAN_SRC = True
 VERBOSE = False
-BATCH_SIZES = [8]
+BATCH_SIZES = [1, 2, 4, 8, 16, 32, 64, 128]
 
 PROJ_DIR = os.path.join("..")
 FS_DIR = os.path.join(PROJ_DIR, "experiments", "fs")

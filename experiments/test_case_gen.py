@@ -109,29 +109,29 @@ def small_files_2p11(root_dir):
     for i in range(int(2**11)):
         create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
-# @TestCase(13)
-# def small_files_2p12(root_dir):
-#     log_print("2^12 10KB file")
-#     for i in range(int(2**12)):
-#         create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+@TestCase(13)
+def small_files_2p12(root_dir):
+    log_print("2^12 10KB file")
+    for i in range(int(2**12)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
-# @TestCase(14)
-# def small_files_2p13(root_dir):
-#     log_print("2^13 10KB file")
-#     for i in range(int(2**13)):
-#         create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+@TestCase(14)
+def small_files_2p13(root_dir):
+    log_print("2^13 10KB file")
+    for i in range(int(2**13)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
-# @TestCase(15)
-# def small_files_2p14(root_dir):
-#     log_print("2^14 10KB file")
-#     for i in range(int(2**14)):
-#         create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+@TestCase(15)
+def small_files_2p14(root_dir):
+    log_print("2^14 10KB file")
+    for i in range(int(2**14)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
-# @TestCase(16)
-# def small_files_2p15(root_dir):
-#     log_print("2^15 10KB file")
-#     for i in range(int(2**15)):
-#         create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
+@TestCase(16)
+def small_files_2p15(root_dir):
+    log_print("2^15 10KB file")
+    for i in range(int(2**15)):
+        create_rand_file(os.path.join(root_dir, "{}.txt".format(i)), 10*_KB_)
 
 @TestCase(17)
 def short_balanced_tree(root_dir):
@@ -154,13 +154,13 @@ def tall_balanced_tree_more_files(root_dir):
     log_print("Balanced tree of height 7, 10 files")
     create_mary_tree(root_dir, 7, 10, 2)
 
-# @TestCase(20)
-# def tall_balanced_tree_even_more_files(root_dir):
-#     # Balanced tree of height 7
-#     # Each non-leaf has 10 files and 2 dir
-#     # Warning: this is a phat test case, will take a couple minutes to run
-#     log_print("Balanced tree of height 7, 20 files")
-#     create_mary_tree(root_dir, 7, 20, 2)
+@TestCase(20)
+def tall_balanced_tree_even_more_files(root_dir):
+    # Balanced tree of height 7
+    # Each non-leaf has 10 files and 2 dir
+    # Warning: this is a phat test case, will take a couple minutes to run
+    log_print("Balanced tree of height 7, 20 files")
+    create_mary_tree(root_dir, 7, 20, 2)
 
 @TestCase(21)
 def tall_imbalanced_tree_more_files(root_dir):
